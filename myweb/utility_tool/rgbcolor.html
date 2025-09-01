@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGB颜色预览工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        danger: '#EF4444',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .slider-thumb {
+                @apply appearance-none w-5 h-5 rounded-full bg-primary cursor-pointer;
+            }
+            .slider-track {
+                @apply h-2 rounded-lg appearance-none bg-gray-200;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 text-center mb-6">
+                RGB颜色预览工具
+            </h1>
+            
+            <!-- 颜色预览区域 -->
+            <div id="colorPreview" class="w-full h-48 rounded-lg mb-6 flex items-center justify-center transition-colors duration-300" style="background-color: rgb(207, 190, 165);">
+                <span id="previewText" class="text-white font-medium text-lg">RGB颜色预览</span>
+            </div>
+            
+            <!-- RGB输入区域 -->
+            <div class="space-y-4 mb-6">
+                <!-- 红色通道 -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label for="red" class="text-sm font-medium text-gray-700">红色 (R)</label>
+                        <span id="redValue" class="text-sm font-medium text-red-500">207</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        id="red" 
+                        min="0" 
+                        max="255" 
+                        value="207" 
+                        class="slider-track w-full"
+                    >
+                </div>
+                
+                <!-- 绿色通道 -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label for="green" class="text-sm font-medium text-gray-700">绿色 (G)</label>
+                        <span id="greenValue" class="text-sm font-medium text-green-500">190</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        id="green" 
+                        min="0" 
+                        max="255" 
+                        value="190" 
+                        class="slider-track w-full"
+                    >
+                </div>
+                
+                <!-- 蓝色通道 -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label for="blue" class="text-sm font-medium text-gray-700">蓝色 (B)</label>
+                        <span id="blueValue" class="text-sm font-medium text-blue-500">165</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        id="blue" 
+                        min="0" 
+                        max="255" 
+                        value="165" 
+                        class="slider-track w-full"
+                    >
+                </div>
+            </div>
+            
+            <!-- 文本输入区域 -->
+            <div class="mb-6">
+                <label for="rgbInput" class="block text-sm font-medium text-gray-700 mb-1">
+                    输入RGB值 (例如: 207, 190, 165)
+                </label>
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="rgbInput" 
+                        placeholder="请输入RGB值，用逗号分隔" 
+                        value="207, 190, 165"
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                    >
+                    <button id="updateBtn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                        <i class="fa fa-refresh mr-1"></i> 更新
+                    </button>
+                </div>
+                <p id="errorMsg" class="text-danger text-sm mt-1 hidden">请输入有效的RGB值（0-255之间的三个数字，用逗号分隔）</p>
+            </div>
+            
+            <!-- 颜色信息和复制 -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <div>
+                        <p class="text-sm text-gray-500">RGB值</p>
+                        <p id="rgbCode" class="font-medium">rgb(207, 190, 165)</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">十六进制</p>
+                        <p id="hexCode" class="font-medium">#CFBEA5</p>
+                    </div>
+                </div>
+                <button id="copyBtn" class="w-full bg-secondary text-white py-2 rounded-lg hover:bg-secondary/90 transition-colors flex items-center justify-center gap-1">
+                    <i class="fa fa-copy"></i>
+                    <span>复制RGB代码</span>
+                </button>
+                <p id="copyFeedback" class="text-center text-sm mt-2 hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const redSlider = document.getElementById('red');
+        const greenSlider = document.getElementById('green');
+        const blueSlider = document.getElementById('blue');
+        const redValue = document.getElementById('redValue');
+        const greenValue = document.getElementById('greenValue');
+        const blueValue = document.getElementById('blueValue');
+        const rgbInput = document.getElementById('rgbInput');
+        const updateBtn = document.getElementById('updateBtn');
+        const colorPreview = document.getElementById('colorPreview');
+        const previewText = document.getElementById('previewText');
+        const rgbCode = document.getElementById('rgbCode');
+        const hexCode = document.getElementById('hexCode');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyFeedback = document.getElementById('copyFeedback');
+        const errorMsg = document.getElementById('errorMsg');
+
+        // 更新颜色显示
+        function updateColor(r, g, b) {
+            // 确保值在0-255范围内
+            r = Math.min(255, Math.max(0, parseInt(r)));
+            g = Math.min(255, Math.max(0, parseInt(g)));
+            b = Math.min(255, Math.max(0, parseInt(b)));
+            
+            // 更新滑块值
+            redSlider.value = r;
+            greenSlider.value = g;
+            blueSlider.value = b;
+            
+            // 更新数值显示
+            redValue.textContent = r;
+            greenValue.textContent = g;
+            blueValue.textContent = b;
+            
+            // 更新输入框
+            rgbInput.value = `${r}, ${g}, ${b}`;
+            
+            // 更新颜色预览
+            const rgbStr = `rgb(${r}, ${g}, ${b})`;
+            colorPreview.style.backgroundColor = rgbStr;
+            rgbCode.textContent = rgbStr;
+            
+            // 转换为十六进制
+            const hexStr = `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
+            hexCode.textContent = hexStr.toUpperCase();
+            
+            // 根据亮度调整文字颜色
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            previewText.style.color = brightness > 128 ? '#000' : '#fff';
+        }
+
+        // 辅助函数：将RGB分量转换为十六进制
+        function componentToHex(c) {
+            const hex = c.toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        }
+
+        // 验证RGB输入
+        function validateRgbInput(input) {
+            const regex = /^(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})$/;
+            const match = input.match(regex);
+            
+            if (!match) return null;
+            
+            const r = parseInt(match[1]);
+            const g = parseInt(match[2]);
+            const b = parseInt(match[3]);
+            
+            if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                return { r, g, b };
+            }
+            
+            return null;
+        }
+
+        // 滑块事件监听
+        redSlider.addEventListener('input', () => {
+            updateColor(redSlider.value, greenSlider.value, blueSlider.value);
+            errorMsg.classList.add('hidden');
+        });
+
+        greenSlider.addEventListener('input', () => {
+            updateColor(redSlider.value, greenSlider.value, blueSlider.value);
+            errorMsg.classList.add('hidden');
+        });
+
+        blueSlider.addEventListener('input', () => {
+            updateColor(redSlider.value, greenSlider.value, blueSlider.value);
+            errorMsg.classList.add('hidden');
+        });
+
+        // 更新按钮事件
+        updateBtn.addEventListener('click', () => {
+            const input = rgbInput.value.trim();
+            const rgb = validateRgbInput(input);
+            
+            if (rgb) {
+                updateColor(rgb.r, rgb.g, rgb.b);
+                errorMsg.classList.add('hidden');
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        });
+
+        // 回车键触发更新
+        rgbInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                updateBtn.click();
+            }
+        });
+
+        // 复制功能
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(rgbCode.textContent)
+                .then(() => {
+                    copyFeedback.textContent = '复制成功！';
+                    copyFeedback.className = 'text-center text-sm mt-2 text-secondary';
+                    copyFeedback.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        copyFeedback.classList.add('hidden');
+                    }, 2000);
+                })
+                .catch(() => {
+                    copyFeedback.textContent = '复制失败，请手动复制';
+                    copyFeedback.className = 'text-center text-sm mt-2 text-danger';
+                    copyFeedback.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        copyFeedback.classList.add('hidden');
+                    }, 2000);
+                });
+        });
+
+        // 自定义滑块样式
+        const sliders = document.querySelectorAll('input[type="range"]');
+        sliders.forEach(slider => {
+            slider.style.webkitAppearance = 'none';
+            slider.addEventListener('input', function() {
+                // 为红色滑块添加特殊样式
+                if (this.id === 'red') {
+                    this.style.background = `linear-gradient(to right, #fff, #ef4444)`;
+                }
+                // 为绿色滑块添加特殊样式
+                else if (this.id === 'green') {
+                    this.style.background = `linear-gradient(to right, #fff, #10b981)`;
+                }
+                // 为蓝色滑块添加特殊样式
+                else if (this.id === 'blue') {
+                    this.style.background = `linear-gradient(to right, #fff, #3b82f6)`;
+                }
+            });
+            
+            // 初始化滑块样式
+            if (slider.id === 'red') {
+                slider.style.background = `linear-gradient(to right, #fff, #ef4444)`;
+            } else if (slider.id === 'green') {
+                slider.style.background = `linear-gradient(to right, #fff, #10b981)`;
+            } else if (slider.id === 'blue') {
+                slider.style.background = `linear-gradient(to right, #fff, #3b82f6)`;
+            }
+        });
+
+        // 滑块thumb样式
+        document.head.insertAdjacentHTML('beforeend', `
+            <style>
+                input[type="range"]::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    background: #4F46E5;
+                    cursor: pointer;
+                }
+                
+                input[type="range"]::-moz-range-thumb {
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    background: #4F46E5;
+                    cursor: pointer;
+                    border: none;
+                }
+            </style>
+        `);
+    </script>
+</body>
+</html>

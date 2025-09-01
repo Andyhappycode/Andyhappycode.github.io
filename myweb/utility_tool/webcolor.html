@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>十六进制颜色预览工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Arial", "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        .color-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        #colorInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #333;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #colorInput:focus {
+            border-color: #4285f4;
+        }
+
+        #previewBtn {
+            padding: 12px 20px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #previewBtn:hover {
+            background-color: #3367d6;
+        }
+
+        .color-preview {
+            width: 100%;
+            height: 200px;
+            border-radius: 8px;
+            background-color: #ffffff;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 18px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.5s;
+        }
+
+        .color-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #colorCode {
+            font-size: 18px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        #copyBtn {
+            padding: 8px 15px;
+            background-color: #34a853;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #copyBtn:hover {
+            background-color: #2d8645;
+        }
+
+        .tips {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .error {
+            color: #ea4335;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>十六进制颜色预览工具</h1>
+        
+        <!-- 输入区域 -->
+        <div class="color-input-group">
+            <input 
+                type="text" 
+                id="colorInput" 
+                placeholder="请输入十六进制颜色（如 #cfbea5 或 cfbea5）"
+                value="#cfbea5"
+            >
+            <button id="previewBtn">预览颜色</button>
+        </div>
+        
+        <!-- 错误提示 -->
+        <div class="error" id="errorMsg">请输入有效的十六进制颜色代码（如 #cfbea5 或 cfbea5）</div>
+        
+        <!-- 颜色预览区域 -->
+        <div class="color-preview" id="colorPreview">
+            颜色将显示在这里
+        </div>
+        
+        <!-- 颜色信息与复制 -->
+        <div class="color-info">
+            <span id="colorCode">#cfbea5</span>
+            <button id="copyBtn">复制颜色代码</button>
+        </div>
+        
+        <!-- 提示信息 -->
+        <div class="tips">
+            支持格式：#fff（3位）、#ffffff（6位）、fff（无#号）<br>
+            输入后点击「预览颜色」或按回车键即可更新
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const colorInput = document.getElementById('colorInput');
+        const previewBtn = document.getElementById('previewBtn');
+        const colorPreview = document.getElementById('colorPreview');
+        const colorCode = document.getElementById('colorCode');
+        const copyBtn = document.getElementById('copyBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        // 验证十六进制颜色的正则表达式
+        const colorReg = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+        // 初始化颜色（默认显示#cfbea5）
+        updateColor('#cfbea5');
+
+        // 预览颜色函数
+        function updateColor(color) {
+            // 统一格式：添加#号（如果没有）
+            const formattedColor = color.startsWith('#') ? color : `#${color}`;
+            
+            // 验证颜色有效性
+            if (!colorReg.test(formattedColor)) {
+                errorMsg.style.display = 'block';
+                return;
+            }
+            
+            // 隐藏错误提示
+            errorMsg.style.display = 'none';
+            
+            // 更新预览区域颜色和代码显示
+            colorPreview.style.backgroundColor = formattedColor;
+            colorCode.textContent = formattedColor.toUpperCase(); // 转为大写更规范
+            
+            // 根据颜色亮度调整预览文字颜色（避免文字与背景融合）
+            const brightness = getColorBrightness(formattedColor);
+            colorPreview.style.color = brightness > 128 ? '#333' : '#fff';
+        }
+
+        // 计算颜色亮度（用于调整文字颜色）
+        function getColorBrightness(hexColor) {
+            // 去除#号
+            const hex = hexColor.replace('#', '');
+            
+            // 处理3位和6位颜色
+            const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.substring(0, 2), 16);
+            const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.substring(2, 4), 16);
+            const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.substring(4, 6), 16);
+            
+            // 计算亮度（灰度值公式：(R*299 + G*587 + B*114)/1000）
+            return (r * 299 + g * 587 + b * 114) / 1000;
+        }
+
+        // 按钮点击事件：预览颜色
+        previewBtn.addEventListener('click', () => {
+            const inputValue = colorInput.value.trim();
+            updateColor(inputValue);
+        });
+
+        // 回车键触发预览
+        colorInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const inputValue = colorInput.value.trim();
+                updateColor(inputValue);
+            }
+        });
+
+        // 复制颜色代码功能
+        copyBtn.addEventListener('click', () => {
+            // 复制显示的颜色代码
+            navigator.clipboard.writeText(colorCode.textContent)
+                .then(() => {
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = '复制成功！';
+                    copyBtn.style.backgroundColor = '#2d8645';
+                    
+                    // 2秒后恢复原文本
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                        copyBtn.style.backgroundColor = '#34a853';
+                    }, 2000);
+                })
+                .catch(() => {
+                    copyBtn.textContent = '复制失败';
+                    copyBtn.style.backgroundColor = '#ea4335';
+                    
+                    setTimeout(() => {
+                        copyBtn.textContent = '复制颜色代码';
+                        copyBtn.style.backgroundColor = '#34a853';
+                    }, 2000);
+                });
+        });
+    </script>
+</body>
+</html>
